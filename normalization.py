@@ -22,22 +22,16 @@ for file in glob.glob(pattern):
     posts.append(json_data)
 
 #Removes all the job posts that are not in English
-#Optimize code!!!
-while True:
-  size = len(posts)
+indexes = []
+for i, dic in enumerate(posts):
+  content = Text(''.join([x for x in dic['description'] if x.isprintable()]))
+  if content.language.name != 'English':
+    indexes.append(i)
 
-  for dic in posts:
+for i in reversed(indexes): posts.pop(i)
 
-    content = Text(" ".join(word_tokenize(dic['description'])))
-    try:
-      if content.language.name != 'English':
-        posts.remove(dic)
-    except:
-      posts.remove(dic)
- 
-  if size == len(posts):
-    break
-
+#2915 1st version
+#2913 2nd version
 
 
 req_cols = [
