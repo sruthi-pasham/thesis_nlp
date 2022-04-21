@@ -1,7 +1,7 @@
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import recall_score, f1_score, precision_score
-from merger import train, valid, test, y_train, y_valid, y_test
+from merger import train_bl as train, valid_bl as valid, test_bl as test, y_train, y_valid, y_test
 import numpy as np
 import gensim
 from gensim.models import Word2Vec

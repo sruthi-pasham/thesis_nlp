@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import json
 import glob
 from polyglot.text import Text
-from nltk.tokenize import word_tokenize
 
 with open('./excel/prospects(cs,sd).csv', 'r') as f:
   df_prospects = pd.read_csv(f,sep=';', header=0)
@@ -179,9 +178,5 @@ final_df = final_df.drop(test_df['jobId'].index)
 valid_df = final_df.groupby('RESULT', group_keys=False).apply(lambda x: x.sample(frac=round(len(test_df)/len(final_df), 2), random_state=123)) 
 train_df = final_df.drop(valid_df['jobId'].index)
 
-print(len(test_df['RESULT'].unique()))
-print(sorted(test_df['RESULT'].unique()))
-print(sorted(valid_df['RESULT'].unique()))
-print(sorted(train_df['RESULT'].unique()))
 unique_jobs = sorted(train_df['RESULT'].unique())
 

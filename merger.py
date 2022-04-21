@@ -1,8 +1,6 @@
 import pandas as pd
 import nltk
-from transformers import BertTokenizer
 import numpy as np
-import math
 import krippendorff
 import numpy as np
 from nltk.corpus import stopwords
@@ -17,8 +15,6 @@ from emojis import emoji_pattern
 nltk.download('punkt')
 nltk.download('stopwords')
 
-
-tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
 sruthi = np.array(sruthi_annot).reshape(1,30*58)
 pedro = np.array(pedro_annot).reshape(1,30*58)
@@ -54,27 +50,6 @@ def get_description(partition):
     else:
       continue
 
-def relevant_info(partition):
-  lst = []
-  iter = get_description(partition)
-  
-  while True:
-    try:
-      post = emoji_pattern.sub(r'',next(iter).replace('\n', ' '))
-      token = tokenizer(post)
-
-      num_tokens = len(token['input_ids'])
-      if 512 - num_tokens < 0:
-        start =  math.ceil((num_tokens-512)/2)
-        #print(type(', '.join([str(token) for token in token['input_ids'][start:start+512]])))
-        lst.append(token['input_ids'][start:start+512])
-      else:
-        lst.append(token['input_ids'])
-
-    except StopIteration:
-      break
-
-  return lst
 
 stop_words = stopwords.words('english')
 def cleaner(partition):
@@ -95,6 +70,6 @@ def cleaner(partition):
       break
   return lst
 
-train = cleaner(train_df)
-valid = cleaner(valid_df)
-test = cleaner(test_df)
+train_bl= cleaner(train_df)
+valid_bl = cleaner(valid_df)
+test_bl = cleaner(test_df)
