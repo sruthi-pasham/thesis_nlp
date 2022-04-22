@@ -1,10 +1,11 @@
-from numpy import round_
+import numpy as np
 import torch
 from transformers import BertTokenizer, BertModel
-from merger import emoji_pattern, train_df, valid_df, test_df, posts
+from merger import emoji_pattern, train_df, valid_df, test_df, posts, y_test, y_valid, y_train
 import re
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
 
 def bert_cleaner(partition):
     lst = []
@@ -29,7 +30,32 @@ def tokenize(partition):
             new_lst.append(tokenizer(post[start:start+512]))
     return new_lst
             
-tokenize(train_df)
+
+s = tokenize(train_df)
+print(s[0])
+train = {}
+keys = ['input_ids', 'token_type_ids', 'attention_mask']
+for key in keys:
+    train[key] = np.array([torch.tensor(i[key]) for i in s])
+
+
+class jobs_template_dataset(torch.utils.data.Dataset):
+  
+  def __init__(self, encodings, labels):
+    self.encodings = encodings
+    self.labels = labels
+  
+  def __getitem__(self, idx):
+    items = {key:val[idx].clone().detach() for key, val in self.encodings.items()}
+    items['labels'] = torch.tensor(self.labels[idx])
+    return items
+  
+  def __len__(self):
+    return len(self.labels)
+
+train_vals = jobs_template_dataset(train,y_train)
+
+
 
 
     
