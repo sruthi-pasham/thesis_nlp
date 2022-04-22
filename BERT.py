@@ -31,12 +31,12 @@ def tokenize(partition):
     return new_lst
             
 
-s = tokenize(train_df)
-print(s[0])
+
+tokens = tokenize(train_df)
 train = {}
 keys = ['input_ids', 'token_type_ids', 'attention_mask']
 for key in keys:
-    train[key] = np.array([torch.tensor(i[key]) for i in s])
+    train[key] = np.array([torch.tensor(item[key]) for item in tokens])
 
 
 class jobs_template_dataset(torch.utils.data.Dataset):
