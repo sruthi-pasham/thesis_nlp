@@ -15,7 +15,6 @@ from emojis import emoji_pattern
 nltk.download('punkt')
 nltk.download('stopwords')
 
-
 sruthi = np.array(sruthi_annot).reshape(1,30*58)
 pedro = np.array(pedro_annot).reshape(1,30*58)
 
