@@ -6,6 +6,8 @@ import numpy as np
 import gensim
 from gensim.models import Word2Vec
 
+print(gensim.__version__)
+
 def unigram(data):
   unigrams = []
   for str in data:
@@ -27,10 +29,10 @@ print(np.asarray(training_corpus).shape)
 #corpus[2]
 
 #Word2Vec model (skipgram)
-w2v = gensim.models.Word2Vec(training_corpus, min_count = 2,size = 100, window = 5, sg=1)
+w2v = gensim.models.Word2Vec(training_corpus, min_count = 2, size = 100, window = 5, sg=1)
 
 # Finding Word Vectors
-print(w2v['python'].shape)
+
 
 #testing
 # Most similar words
@@ -41,7 +43,7 @@ print(similar)
 print(train[0].split())
 
 def compressor(partition):
-  return [np.mean(w2v[[wrd for wrd in sent.split() if wrd in w2v.wv.vocab]], axis=0) for sent in partition]
+  return np.array([np.mean(w2v[[wrd for wrd in sent.split() if wrd in w2v.wv.vocab]], axis=0) for sent in partition])
 
 x_train = compressor(train)
 x_valid = compressor(valid)
