@@ -65,7 +65,7 @@ preds_test = lr.predict(x_test)
 #Accuracy
 print(recall_score(y_test, preds_test, average='weighted'))
 #Recall
-print(recall_score(y_test.T, preds_test.T, average='macro'))
+print(recall_score(y_test.T, preds_test.T, average='macro', ))
 #Precision
 print(precision_score(y_test.T, preds_test.T, average='macro'))
 #F1

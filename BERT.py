@@ -15,7 +15,7 @@ tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 tokenizer.save_pretrained('./')
 torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
+print(np.__version__)
 
 def bert_cleaner(partition):
     lst = []
@@ -49,12 +49,11 @@ def split_input(post, dim):
     return token
            
 
-#turn this into a function
 def group_keys(tokens):
     valid = {}
     keys = ['input_ids', 'token_type_ids', 'attention_mask']
     for key in keys:
-        valid[key] = np.array([torch.tensor(item[key]) for item in tokens])
+        valid[key] = torch.tensor([item[key] for item in tokens])
 
     return valid
 
@@ -74,8 +73,9 @@ class jobs_template_dataset(torch.utils.data.Dataset):
   def __len__(self):
     return len(self.labels)
 
-train_dataset = jobs_template_dataset(tokenize(train_df), y_train)
+#train_dataset = jobs_template_dataset(tokenize(train_df), y_train)
 valid_dataset = jobs_template_dataset(tokenize(valid_df), y_valid)
+print(valid_dataset[0])
 
 model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(courses), from_tf=True)
 #model = BertForSequenceClassification.from_pretrained('./')
@@ -98,7 +98,7 @@ def metrics(target, preds, acc, recall, f1, precision):
     precision = np.append(precision, precision_score(target.T, preds.T, average='macro'))
   
 
-train_loader = DataLoader(train_dataset, batch_size=32)
+#train_loader = DataLoader(train_dataset, batch_size=32)
 valid_loader = DataLoader(valid_dataset, batch_size=32)
 
 optim = torch.optim.AdamW(model.parameters(), lr=0.0001)

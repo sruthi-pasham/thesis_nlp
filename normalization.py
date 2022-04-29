@@ -10,7 +10,7 @@ with open('./excel/prospects(cs,sd).csv', 'r') as f:
   df_prospects = df_prospects['Program,Job_Prospect'].str.split(',', expand=True)
   df_prospects.rename(columns={0:'Program', 1: 'Job Prospect'} , inplace=True)
 
-
+print(pd.__version__)
 pattern = './job_posts/*.json'
 
 #Dump all the json files into a list of posts
@@ -74,11 +74,11 @@ df_j['title'] = df_j['title'].str.strip().str.lower()
 
 #drop skill and description
 df_j.drop(['skills','description'],axis=1, inplace=True)
-df_j.describe()
+
 
 #making a cross join of prospects & job titles, to be able to normalize 
 cartesian_title_x_prospect = df_j.merge(df_prospects, how='cross') 
-
+print(cartesian_title_x_prospect)
 #creating 'test' column to check if job_prospect is in job title
 cartesian_title_x_prospect['test'] = cartesian_title_x_prospect.apply(lambda x: x['Job Prospect'] in x['title'], axis=1)
 
