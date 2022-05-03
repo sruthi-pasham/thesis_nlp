@@ -1,7 +1,6 @@
 import numpy as np
-import transformers
 import torch
-from transformers import AdamW, BertTokenizer, BertForSequenceClassification
+from transformers import BertTokenizer, BertForSequenceClassification
 from merger import emoji_pattern, train_df, valid_df, test_df, posts, y_test, y_valid, y_train
 from courses import courses
 import re
@@ -12,8 +11,8 @@ from sklearn.metrics import recall_score, f1_score, precision_score
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 #tokenizer = BertTokenizer.from_pretrained('./')
-tokenizer.save_pretrained('./')
-torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#tokenizer.save_pretrained('./')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 print(np.__version__)
 
@@ -77,11 +76,11 @@ class jobs_template_dataset(torch.utils.data.Dataset):
 valid_dataset = jobs_template_dataset(tokenize(valid_df), y_valid)
 print(valid_dataset[0])
 
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(courses), from_tf=True)
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(courses))#, from_tf=True)
 #model = BertForSequenceClassification.from_pretrained('./')
-model.save_pretrained('./')
+#model.save_pretrained('./')
 
-#model = model.to(device='device')
+#model.to(device='device')
 
 def binary_classification(inputs, targets):
     criterion = nn.BCEWithLogitsLoss()
@@ -98,7 +97,7 @@ def metrics(target, preds, acc, recall, f1, precision):
     precision = np.append(precision, precision_score(target.T, preds.T, average='macro'))
   
 
-#train_loader = DataLoader(train_dataset, batch_size=32)
+train_loader = DataLoader(train_dataset, batch_size=32)
 valid_loader = DataLoader(valid_dataset, batch_size=32)
 
 optim = torch.optim.AdamW(model.parameters(), lr=0.0001)
@@ -106,7 +105,7 @@ optim = torch.optim.AdamW(model.parameters(), lr=0.0001)
 
 a, r, f, p = empty_arr()
 model.train()
-for batch in valid_loader:
+for batch in train_loader:
     optim.zero_grad()
     
     inputs = batch['input_ids']

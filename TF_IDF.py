@@ -9,7 +9,7 @@ x_train = vectorizer.fit_transform(train).toarray()
 x_valid = vectorizer.fit_transform(valid).toarray()
 x_test = vectorizer.fit_transform(test).toarray()
 
-x_train.shape
+print(x_train.shape)
 
 lr_td_idf = OneVsRestClassifier(estimator=LogisticRegression()).fit(x_train, y_train)
 
