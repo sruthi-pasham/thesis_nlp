@@ -10,9 +10,10 @@ from sklearn.metrics import recall_score, f1_score, precision_score
 
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+keys = ['input_ids', 'token_type_ids', 'attention_mask']
 #tokenizer = BertTokenizer.from_pretrained('./')
 #tokenizer.save_pretrained('./')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 print(np.__version__)
 
@@ -26,21 +27,18 @@ def bert_cleaner(partition):
             continue
     return lst
 
-
-
-def tokenize(partition):
-    old_lst = bert_cleaner(partition)
+def tokenize(old_list, tokenizer, keys):
     new_lst = []
-    for post in old_lst:
+    for post in old_list:
         dim = len(tokenizer(post)['input_ids'])
         if dim < 512:
             new_lst.append(tokenizer(post, padding='max_length', truncation=True, max_length=512))
         else:
-            new_lst.append(split_input(post,dim))
-    return group_keys(new_lst)
+            new_lst.append(split_input(post,dim,tokenizer))
+    return group_keys(new_lst, keys)
 
 
-def split_input(post, dim):
+def split_input(post, dim, tokenizer):
     start = round((dim-512)/2)
     token = tokenizer(post)
     for i in token.keys():
@@ -48,13 +46,11 @@ def split_input(post, dim):
     return token
            
 
-def group_keys(tokens):
-    valid = {}
-    keys = ['input_ids', 'token_type_ids', 'attention_mask']
+def group_keys(tokens, keys):
+    dic = {}
     for key in keys:
-        valid[key] = torch.tensor([item[key] for item in tokens])
-
-    return valid
+        dic[key] = torch.tensor([item[key] for item in tokens])
+    return dic
 
 
 
@@ -72,11 +68,11 @@ class jobs_template_dataset(torch.utils.data.Dataset):
   def __len__(self):
     return len(self.labels)
 
-#train_dataset = jobs_template_dataset(tokenize(train_df), y_train)
-valid_dataset = jobs_template_dataset(tokenize(valid_df), y_valid)
-print(valid_dataset[0])
+#train_dataset = jobs_template_dataset(tokenize(cleaner(bert_cleaner(train_df))), y_valid)
+valid_dataset = jobs_template_dataset(tokenize(bert_cleaner(valid_df), tokenizer, keys), y_valid)
 
-model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(courses))#, from_tf=True)
+
+#model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(courses))#, from_tf=True)
 #model = BertForSequenceClassification.from_pretrained('./')
 #model.save_pretrained('./')
 
@@ -97,49 +93,49 @@ def metrics(target, preds, acc, recall, f1, precision):
     precision = np.append(precision, precision_score(target.T, preds.T, average='macro'))
   
 
-train_loader = DataLoader(train_dataset, batch_size=32)
-valid_loader = DataLoader(valid_dataset, batch_size=32)
+#train_loader = DataLoader(train_dataset, batch_size=32)
+#valid_loader = DataLoader(valid_dataset, batch_size=32)
 
-optim = torch.optim.AdamW(model.parameters(), lr=0.0001)
+#optim = torch.optim.AdamW(model.parameters(), lr=0.0001)
 
 
-a, r, f, p = empty_arr()
-model.train()
-for batch in train_loader:
-    optim.zero_grad()
+#a, r, f, p = empty_arr()
+#model.train()
+#for batch in train_loader:
+    #optim.zero_grad()
     
-    inputs = batch['input_ids']
-    attention = batch['attention_mask']
-    labels = batch['labels'].to(torch.float64)
-    logits = model(inputs, attention).logits
+    #inputs = batch['input_ids']
+    #attention = batch['attention_mask']
+    #labels = batch['labels'].to(torch.float64)
+    #logits = model(inputs, attention).logits
     
-    loss = binary_classification(logits, labels)
+    #loss = binary_classification(logits, labels)
     
-    print(loss)
+    #print(loss)
 
-    preds = torch.round(torch.sigmoid(logits)).detach().numpy()
-    target = labels.numpy()
-    metrics(target, preds, a, r, f, p)
+    #preds = torch.round(torch.sigmoid(logits)).detach().numpy()
+    #target = labels.numpy()
+    #metrics(target, preds, a, r, f, p)
     
-    loss.backward()
-    optim.step()
+    #loss.backward()
+    #optim.step()
 
-print('epoch: 1 \nacc: {}\nrecall: {}\nf1: {}\nprecision: {}'.format(np.mean(a) 
-                                                ,np.mean(r), np.mean(f), np.mean(p)))
+#print('epoch: 1 \nacc: {}\nrecall: {}\nf1: {}\nprecision: {}'.format(np.mean(a) 
+                                                #,np.mean(r), np.mean(f), np.mean(p)))
 
 
-a, r, f, p = empty_arr()
-model.eval()
-for i in valid_loader:
-    inputs = batch['input_ids']
-    attention = batch['attention_mask']
-    labels = batch['labels'].to(torch.float64).numpy()
-    preds = torch.round(torch.sigmoid(model(inputs, attention).logits)).detach.numpy()
+#a, r, f, p = empty_arr()
+#model.eval()
+#for i in valid_loader:
+    #inputs = batch['input_ids']
+    #attention = batch['attention_mask']
+    #labels = batch['labels'].to(torch.float64).numpy()
+    #preds = torch.round(torch.sigmoid(model(inputs, attention).logits)).detach.numpy()
 
-    metrics(labels, preds, a, r, f, p)
+    #metrics(labels, preds, a, r, f, p)
     
-print('\nacc: {}\nrecall: {}\nf1: {}\nprecision: {}'.format(np.mean(a) 
-                                                ,np.mean(r), np.mean(f), np.mean(p)))
+#print('\nacc: {}\nrecall: {}\nf1: {}\nprecision: {}'.format(np.mean(a) 
+                                                #,np.mean(r), np.mean(f), np.mean(p)))
 
 
 
