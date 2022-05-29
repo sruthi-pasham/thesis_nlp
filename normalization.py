@@ -127,7 +127,6 @@ cartesian_title_x_prospect['RESULT'] = cartesian_title_x_prospect.apply(lambda x
                                                                                ('software engineer' if 'engineer' in x['title'] else 
                                                                               ('it Business Analyst' if 'business' in x['title'] else (0)
 ))))))))))))))))))))))))))))))))))))))), axis=1)
-
 #dropping Job_Prospect column, not relevant anymore
 cartesian_title_x_prospect.drop(['Job Prospect'],axis=1, inplace=True)
 cartesian_title_x_prospect.describe()
@@ -179,4 +178,4 @@ valid_df = final_df.groupby('RESULT', group_keys=False).apply(lambda x: x.sample
 train_df = final_df.drop(valid_df['jobId'].index)
 
 unique_jobs = sorted(train_df['RESULT'].unique())
-
+unique_test_jobs = sorted(test_df['RESULT'].unique())

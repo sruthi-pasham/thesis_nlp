@@ -1,21 +1,21 @@
 import numpy as np
+from requests import head
 import torch
-from transformers import BertTokenizer, BertForSequenceClassification
-from merger import emoji_pattern, train_df, valid_df, test_df, posts, y_test, y_valid, y_train
+from transformers import BertTokenizer, BertForSequenceClassification, get_linear_schedule_with_warmup
+from merger import emoji_pattern, train_df, valid_df, test_df, posts, y_test, y_valid, y_train, test
 from courses import courses
 import re
-from torch import nn
 from torch.utils.data import DataLoader
-from sklearn.metrics import recall_score, f1_score, precision_score
+from metrics import binary_classification, empty_arr, metrics
+from Bert_analysis import jobs_first, c_matrix1, helper, c_matrix2, balanced_accuracy, coverage, unique_jobs
 
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 keys = ['input_ids', 'token_type_ids', 'attention_mask']
 #tokenizer = BertTokenizer.from_pretrained('./')
 #tokenizer.save_pretrained('./')
-#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-print(np.__version__)
 
 def bert_cleaner(partition):
     lst = []
@@ -68,75 +68,86 @@ class jobs_template_dataset(torch.utils.data.Dataset):
   def __len__(self):
     return len(self.labels)
 
-#train_dataset = jobs_template_dataset(tokenize(cleaner(bert_cleaner(train_df))), y_valid)
+train_dataset = jobs_template_dataset(tokenize(bert_cleaner(train_df), tokenizer, keys), y_train)
 valid_dataset = jobs_template_dataset(tokenize(bert_cleaner(valid_df), tokenizer, keys), y_valid)
+test_dataset = jobs_template_dataset(tokenize(bert_cleaner(test_df), tokenizer, keys), y_test)
 
 
-#model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(courses))#, from_tf=True)
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(courses))#, from_tf=True)
 #model = BertForSequenceClassification.from_pretrained('./')
 #model.save_pretrained('./')
 
-#model.to(device='device')
-
-def binary_classification(inputs, targets):
-    criterion = nn.BCEWithLogitsLoss()
-    return criterion(inputs, targets)
-
-def empty_arr():
-    return np.array([]), np.array([]), np.array([]), np.array([])
-
-
-def metrics(target, preds, acc, recall, f1, precision):
-    acc = np.append(acc, recall_score(target, preds, average='weighted'))
-    recall = np.append(recall, recall_score(target.T, preds.T, average='macro')) 
-    f1 = np.append(f1, f1_score(target.T, preds.T, average='macro'))
-    precision = np.append(precision, precision_score(target.T, preds.T, average='macro'))
+model.to(device=device)
   
+train_loader = DataLoader(train_dataset, batch_size=4)
+valid_loader = DataLoader(valid_dataset, batch_size=4)
+test_loader = DataLoader(test_dataset, batch_size=4)
 
-#train_loader = DataLoader(train_dataset, batch_size=32)
-#valid_loader = DataLoader(valid_dataset, batch_size=32)
+optim = torch.optim.AdamW(model.parameters(), lr=0.01)
+epochs = 1
+#lr_scheduler = get_linear_schedule_with_warmup(optimizer=optim, num_warmup_steps=0, num_training_steps=epochs)
 
-#optim = torch.optim.AdamW(model.parameters(), lr=0.0001)
+model.train()
+for e in range(epochs):
+    for batch in train_loader:
+        optim.zero_grad()
+        
+        inputs = batch['input_ids'].to(device)
+        attention = batch['attention_mask'].to(device)
+        labels = batch['labels'].to(device).to(torch.float16)
+        logits = model(inputs, attention).logits
+        
+        loss = binary_classification(logits, labels)
+        loss.backward()
+        optim.step()
+        #lr_scheduler.step()
+
+    loss_valid = 0
+    model.eval()
+    for batch in valid_loader:
+
+        with torch.no_grad():
+            batch = {k:v.to(device) for k, v in batch.items()}
+
+        loss = binary_classification(model(batch['input_ids'], batch['attention_mask']).logits, batch['labels'].to(torch.float16))
+        loss_valid += loss.item()
+
+    print(loss_valid/len(valid_loader))
 
 
-#a, r, f, p = empty_arr()
-#model.train()
-#for batch in train_loader:
-    #optim.zero_grad()
+
+outcome = []
+a, r, f, p = empty_arr()
+model.eval()
+for batch in test_loader:
+
+    with torch.no_grad():
+        batch = {k:v.to(device) for k, v in batch.items()}
+    preds = torch.round(torch.sigmoid(model(batch['input_ids'], batch['attention_mask']).logits)).detach().cpu().numpy()
+
+    outcome.append(preds)
+
+    labels = batch['labels'].to(torch.float16).numpy()
+    a,r,p,f = metrics(labels, preds, a, r, f, p)
     
-    #inputs = batch['input_ids']
-    #attention = batch['attention_mask']
-    #labels = batch['labels'].to(torch.float64)
-    #logits = model(inputs, attention).logits
+print('\nacc: {}\nrecall: {}\nf1: {}\nprecision: {}'.format(np.mean(a) 
+                                                ,np.mean(r), np.mean(f), np.mean(p)))
     
-    #loss = binary_classification(logits, labels)
     
-    #print(loss)
-
-    #preds = torch.round(torch.sigmoid(logits)).detach().numpy()
-    #target = labels.numpy()
-    #metrics(target, preds, a, r, f, p)
-    
-    #loss.backward()
-    #optim.step()
-
-#print('epoch: 1 \nacc: {}\nrecall: {}\nf1: {}\nprecision: {}'.format(np.mean(a) 
-                                                #,np.mean(r), np.mean(f), np.mean(p)))
 
 
-#a, r, f, p = empty_arr()
-#model.eval()
-#for i in valid_loader:
-    #inputs = batch['input_ids']
-    #attention = batch['attention_mask']
-    #labels = batch['labels'].to(torch.float64).numpy()
-    #preds = torch.round(torch.sigmoid(model(inputs, attention).logits)).detach.numpy()
+first_occ = jobs_first()
 
-    #metrics(labels, preds, a, r, f, p)
-    
-#print('\nacc: {}\nrecall: {}\nf1: {}\nprecision: {}'.format(np.mean(a) 
-                                                #,np.mean(r), np.mean(f), np.mean(p)))
+cm = c_matrix1(y_test, first_occ, helper())
 
+print(cm[1])
+print(np.average(cm[1]))
 
+metrics = c_matrix2(y_test.T, helper().T)
+print(metrics)
 
+print(unique_jobs)
+print(balanced_accuracy())
+print(np.average(balanced_accuracy()))
 
+print(coverage(test, cm[3]))

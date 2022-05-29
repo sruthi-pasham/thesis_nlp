@@ -5,11 +5,12 @@ import krippendorff
 import numpy as np
 from nltk.corpus import stopwords
 import string
-from normalization import test_df, valid_df, train_df, posts
+from normalization import test_df, valid_df, train_df, posts, unique_test_jobs
 from manual_annotation import pedro_annot, sruthi_annot
 from courses import courses
 from look_up_table import table
 from emojis import emoji_pattern
+from sklearn.metrics import confusion_matrix
 
 
 nltk.download('punkt')
@@ -38,9 +39,31 @@ def test_annotation():
   return arr
 
 y_test = test_annotation()
-
 y_train = automatic_annotation(train_df).astype(int)
 y_valid = automatic_annotation(valid_df).astype(int)
+
+
+
+#check discrepancies between test and valid set after annotation
+def job_in_train_df(df, jobs):
+  first_occurs = [df.loc[df['RESULT'] == j].index[0] for j in jobs]
+  return y_valid[first_occurs]
+
+valid_set = job_in_train_df(valid_df.reset_index(), unique_test_jobs)
+test_set = test_annot.reshape(30,58)
+
+cm = confusion_matrix(test_set.flatten(), valid_set.flatten())
+print(cm)
+def recall(cm):
+  return cm.ravel()[3]/(cm.ravel()[3]+ cm.ravel()[2])
+
+def precision(cm):
+  return cm.ravel()[3]/(cm.ravel()[3]+ cm.ravel()[1])
+
+def f1(cm):
+  return 2*cm.ravel()[3]/(2*cm.ravel()[3]+ cm.ravel()[1]+ cm.ravel()[2])
+
+print('recall: {} precision: {} f1: {}'.format(recall(cm), precision(cm), f1(cm)))
 
 def get_description(partition):
   for i, p in enumerate(posts):
